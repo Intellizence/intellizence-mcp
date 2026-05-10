@@ -54,9 +54,3 @@ Example (using `npx` so users don't need a global install):
   }
 }
 ```
-
-Alternatively (if installed globally), set `command` to `intellizence-mcp`.
-
-## Notes
-
-- Requires MongoDB connectivity via `server/_helpers/config.json`.
