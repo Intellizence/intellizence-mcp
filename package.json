@@ -1,0 +1,52 @@
+{
+  "name": "intellizence-mcp",
+  "version": "0.1.0",
+  "description": "Intellizence MCP server (stdio) for accessing Intellizence datasets from MCP clients.",
+  "private": false,
+  "type": "module",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/intellizence/intellizence-mcp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/intellizence/intellizence-mcp/issues"
+  },
+  "homepage": "https://github.com/intellizence/intellizence-mcp#readme",
+  "keywords": [
+    "mcp",
+    "modelcontextprotocol",
+    "intellizence",
+    "sales-intelligence",
+    "market-intelligence"
+  ],
+  "bin": {
+    "intellizence-mcp": "./src/mcp-stdio.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "files": [
+    "src/core/",
+    "src/mcp-stdio.js",
+    "src/mcp-http.js",
+    "package.json",
+    "README.md"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "start:stdio": "node ./src/mcp-stdio.js",
+    "start:http": "node ./src/mcp-http.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.27.1",
+    "express": "^4.21.2",
+    "jose": "^5.9.3",
+    "zod-to-json-schema": "3.23.5"
+  },
+  "overrides": {
+    "zod-to-json-schema": "3.23.5"
+  }
+}
