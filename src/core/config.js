@@ -12,10 +12,9 @@ export default {
     'executive-change',
     'news',
   ],
-  debugAuth: false,
+  debugAuth: true,
   mcpAuth: {
-    disableAuth: false,
-    apiKey: 'intellizence-mcp-dev-key',
+    disableAuth: true,
   },
   auth0: {
     domain: 'dev-f4posa2ghjbh55te.us.auth0.com',

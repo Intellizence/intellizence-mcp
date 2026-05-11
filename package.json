@@ -21,13 +21,15 @@
     "market-intelligence"
   ],
   "bin": {
-    "intellizence-mcp": "./src/mcp-stdio.js"
+    "intellizence-mcp": "./src/mcp-stdio.js",
+    "intellizence-mcp-cli": "./src/cli.js"
   },
   "engines": {
     "node": ">=18"
   },
   "files": [
     "src/core/",
+    "src/cli.js",
     "src/mcp-stdio.js",
     "src/mcp-http.js",
     "package.json",

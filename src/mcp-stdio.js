@@ -22,7 +22,6 @@ async function runStdio() {
   const apiKey = String(process.env.INTELLIZENCE_API_KEY || '').trim();
 
   const userEmail = String(process.env.MCP_USER_EMAIL || '').trim();
-  const userSub = String(process.env.MCP_USER_SUB || '').trim();
 
   if (!apiKey && !userEmail) {
     throw new Error('Missing INTELLIZENCE_API_KEY and MCP_USER_EMAIL (no authentication available for stdio MCP)');
@@ -32,7 +31,7 @@ async function runStdio() {
     {
       requestId: null,
       apiKey: apiKey || null,
-      user: userEmail || userSub ? { email: userEmail || null, sub: userSub || null } : null,
+      user: userEmail ? { email: userEmail || null } : null,
     },
     async () => {
       await server.connect(transport);

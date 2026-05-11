@@ -11,7 +11,6 @@ export async function postJson(path, body) {
     .replace(/\/$/, '');
 
   const userEmail = ctx && ctx.user && typeof ctx.user.email === 'string' ? ctx.user.email.trim() : '';
-  const userSub = ctx && ctx.user && typeof ctx.user.sub === 'string' ? ctx.user.sub.trim() : '';
 
   if (!apiKey && !userEmail) {
     throw new Error('Missing INTELLIZENCE_API_KEY and x-user-email (no authentication available for downstream API call)');
@@ -23,10 +22,7 @@ export async function postJson(path, body) {
       'content-type': 'application/json',
       'x-intellizence-mcp': '1',
       ...(apiKey ? { 'x-api-key': apiKey } : {}),
-      ...(userEmail ? { 'x-intellizence-user-email': userEmail } : {}),
-      ...(userSub ? { 'x-intellizence-user-sub': userSub } : {}),
       ...(userEmail ? { 'x-user-email': userEmail } : {}),
-      ...(userSub ? { 'x-user-sub': userSub } : {}),
     },
     body: JSON.stringify(body || {}),
   });

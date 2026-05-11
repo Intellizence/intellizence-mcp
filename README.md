@@ -17,8 +17,7 @@ The shared core logic lives under `src/core/`.
 
 - `INTELLIZENCE_API_KEY` (required for stdio; required for hosted only if your backend requires it)
 - `INTELLIZENCE_API_BASE_URL` (optional, defaults to `https://connect.intellizence.com`)
-- `MCP_USER_EMAIL` (optional; forwarded as `x-intellizence-user-email`)
-- `MCP_USER_SUB` (optional; forwarded as `x-intellizence-user-sub`)
+- `MCP_USER_EMAIL` (optional; forwarded as `x-user-email`)
 
 Users should obtain an API key from the Intellizence web app.
 
@@ -32,6 +31,39 @@ npm install -g intellizence-mcp
 
 ```bash
 INTELLIZENCE_API_KEY=... intellizence-mcp
+```
+
+PowerShell:
+
+```powershell
+$env:INTELLIZENCE_API_KEY="..."; npx -y intellizence-mcp
+```
+
+CMD:
+
+```cmd
+set INTELLIZENCE_API_KEY=... && npx -y intellizence-mcp
+```
+
+## Run (CLI)
+
+This package also ships a simple JSON-based CLI wrapper around the same dataset tools.
+
+```bash
+INTELLIZENCE_API_KEY=... npx -y intellizence-mcp intellizence-mcp-cli tools
+INTELLIZENCE_API_KEY=... npx -y intellizence-mcp intellizence-mcp-cli call search_news --args '{"companies":["openai.com"],"limit":5}'
+```
+
+PowerShell:
+
+```powershell
+$env:INTELLIZENCE_API_KEY="..."; npx -y intellizence-mcp intellizence-mcp-cli tools
+```
+
+CMD:
+
+```cmd
+set INTELLIZENCE_API_KEY=... && npx -y intellizence-mcp intellizence-mcp-cli tools
 ```
 
 ## Claude Desktop configuration
