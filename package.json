@@ -29,6 +29,7 @@
   },
   "files": [
     "src/core/",
+    "src/http/",
     "src/cli.js",
     "src/mcp-stdio.js",
     "src/mcp-http.js",

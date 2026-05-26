@@ -1,4 +1,4 @@
-import { postJson } from '../api.js';
+import { postJson, getJson } from '../api.js';
 
 function registerNews(server) {
   server.registerResource('news.about', 'news://about', { mimeType: 'text/plain' }, async () => {
@@ -58,12 +58,10 @@ function registerNews(server) {
             '',
             'Notes:',
             '- For best matching, prefer company domain over company name when available',
-            '- Related or clustered articles are grouped under similarNews; surface only when user asks for related coverage',
             "- 'Startup' refers to a company",
             'Response Fields (per record):',
             '- Article level: publishDate, title, desc, publisher, url',
-            '- Signal context: triggerNames, triggerCodes, companyNames, companyDomains',
-            '- Also returns: similarNews, hash. Surface similarNews only when user asks for related coverage.',
+            '- Signal context: triggerNames, companyNames',
           ].join('\n'),
         },
       ],
@@ -75,32 +73,57 @@ function registerNews(server) {
     {
       description: [
         "Searches Intellizence's real-time news feed and returns narrative news articles about companies across 30 growth, sales, risk signal themes including M&A, Fundraising, Layoffs, Leadership Changes, Product Launches, Bankruptcy, Legal, Regulatory, and Security Breaches.",
-        'Use for account briefings, market intelligence, and narrative context.',
-        'Returns unstructured articles — not deduplicated deal records. For precise event-level data, use the structured signal tools.',
-        '',
-        'Use structured filters: companies, themes, date range, limit.',
-        '',
-        'DATE GUIDANCE — map user language to date ranges:',
-        "- 'latest' / 'recent' / 'now' → last 30 days",
-        "- 'this week' → last 7 days",
-        "- 'last week' → 7–14 days ago",
-        "- 'this month' → last 30 days",
-        "- 'last month' → 30–60 days ago",
-        "- 'this quarter' → last 90 days",
-        "- 'this year' → startDate = Jan 1 of current year",
-        "- 'today' / 'pre-call prep' → last 7 days",
-        '- No date mentioned → omit both startDate and endDate (API returns latest)',
-        '',
-        'LIMIT GUIDANCE - match depth of response to user intent:',
-        '- "quick update" / "anything new" / "highlights": 5–10',
-        '- Standard query (default): 25',
-        '- "full briefing" / "comprehensive" / "all": 50–100',
-        '- Pre-call prep: 10',
+        'IMPORTANT: On error, show the exact error message and stop (no retries / no parameter changes / no alternative tools) unless the user explicitly approves.',
+        "IMPORTANT: Do NOT pass 'companies' filter unless the user explicitly names specific companies. For general industry queries, rely on 'themes', 'industries', and 'locations' filters only.",
+        'If hasMore=true, ask the user: "There are more results available. Would you like to see more, or narrow down by date range, company, or topic?"',
+        'Pagination: if hasMore=true and user wants more results, call search_news again passing the nextCursor value as the "nextCursor" parameter (not "cursor"). Keep all other filters identical.',
+        'Filters: companies, themes, industries, stockMarkets, companyTypes, locations, startDate, endDate, limit.',
+        'Industries must be one of: [healthcare, technology, it services, consulting, government, pharmaceuticals, retail, manufacturing, medical devices, insurance, legal, media, sports, energy, utilities, logistics, restaurants, real estate, venture capital, non-profit, consumer products, agriculture, financial services].',
+        "Industry mapping: SaaS/software/cloud software → 'technology'. Managed services/MSP/system integrators/IT outsourcing → 'it services'. Choose a single best match unless the user explicitly asks for multiple.",
+        "companyTypes: use 'public' or 'private' when applicable.",
+        'Locations: expand abbreviations, but keep the granularity the user asked for. If user provides city+state+country, send as "city, state/province, country". If ambiguous, ask the user to clarify.',
+        'Dates: if user says recent/latest → last 30 days; this week → 7 days; today/pre-call → 7 days. If no dates mentioned, omit startDate/endDate.',
+        'Limit: default 25. Highlights 5–10. Comprehensive 50–100.',
       ].join('\n'),
       inputSchema: {
         type: 'object',
         properties: {
           companies: { type: 'array', items: { type: 'string' } },
+          nextCursor: { type: 'string' },
+          industries: {
+            type: 'array',
+            items: {
+              type: 'string',
+              enum: [
+                'healthcare',
+                'technology',
+                'it services',
+                'consulting',
+                'government',
+                'pharmaceuticals',
+                'retail',
+                'manufacturing',
+                'medical devices',
+                'insurance',
+                'legal',
+                'media',
+                'sports',
+                'energy',
+                'utilities',
+                'logistics',
+                'restaurants',
+                'real estate',
+                'venture capital',
+                'non-profit',
+                'consumer products',
+                'agriculture',
+                'financial services',
+              ],
+            },
+          },
+          stockMarkets: { type: 'array', items: { type: 'string' } },
+          companyTypes: { type: 'array', items: { type: 'string' } },
+          locations: { type: 'array', items: { type: 'string' } },
           themes: {
             type: 'array',
             items: {
@@ -140,8 +163,80 @@ function registerNews(server) {
       },
     },
     async (args) => {
-      const result = await postJson('/api/news/search', args ?? {});
-      return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+      try {
+        const result = await postJson('/api/news/search', args ?? {});
+
+        const payload = result && typeof result === 'object' ? result : { ok: true, result };
+        return {
+          ...payload,
+          content: [{ type: 'text', text: JSON.stringify(payload) }],
+        };
+      } catch (err) {
+        const msg = err && typeof err.message === 'string' ? err.message : String(err);
+        const payload = {
+          ok: false,
+          error: {
+            type: 'exception',
+            message: msg,
+          },
+        };
+        return {
+          ...payload,
+          content: [{ type: 'text', text: JSON.stringify(payload) }],
+        };
+      }
+    }
+  );
+
+  server.registerTool(
+    'get_news_by_id',
+    {
+      description: [
+        'Fetch a single news record by id (use when the user asks for more details about a specific news item returned by search_news).',
+        'Input: id (news id).',
+      ].join('\n'),
+      inputSchema: {
+        type: 'object',
+        properties: {
+          id: { type: 'string' },
+        },
+        required: ['id'],
+      },
+    },
+    async (args) => {
+      try {
+        const id = args && typeof args.id === 'string' ? args.id.trim() : '';
+        if (!id) {
+          const payload = {
+            ok: false,
+            error: { type: 'invalid_params', message: 'id is required' },
+          };
+          return {
+            ...payload,
+            content: [{ type: 'text', text: JSON.stringify(payload) }],
+          };
+        }
+
+        const result = await getJson(`/api/news/${encodeURIComponent(id)}`);
+        const payload = result && typeof result === 'object' ? result : { ok: true, result };
+        return {
+          ...payload,
+          content: [{ type: 'text', text: JSON.stringify(payload) }],
+        };
+      } catch (err) {
+        const msg = err && typeof err.message === 'string' ? err.message : String(err);
+        const payload = {
+          ok: false,
+          error: {
+            type: 'exception',
+            message: msg,
+          },
+        };
+        return {
+          ...payload,
+          content: [{ type: 'text', text: JSON.stringify(payload) }],
+        };
+      }
     }
   );
 }

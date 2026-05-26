@@ -14,5 +14,6 @@ Thumbs.db
 
 .vscode/
 .idea/
+.windsurf/
 
 *.tgz
