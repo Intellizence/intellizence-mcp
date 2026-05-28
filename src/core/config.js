@@ -12,13 +12,8 @@ export default {
     'executive-change',
     'news',
   ],
-  debugAuth: true,
-  mcpAuth: {
-    disableAuth: true,
-  },
   auth0: {
     domain: 'dev-f4posa2ghjbh55te.us.auth0.com',
     audience: 'https://mcp.intellizence.com/mcp',
-    requiredScopes: [],
   },
 };
