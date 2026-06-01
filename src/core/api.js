@@ -46,9 +46,7 @@ export async function postJson(path, body) {
     .replace(/\/$/, '');
 
   const userEmail = ctx && ctx.user && typeof ctx.user.email === 'string' ? ctx.user.email.trim() : '';
-  console.log('API CALL');
-  console.log('user.email:', userEmail || '[missing]');
-  
+
   if (!apiKey && !userEmail) {
     throw new Error('Missing INTELLIZENCE_API_KEY and x-user-email (no authentication available for downstream API call)');
   }

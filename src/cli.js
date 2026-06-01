@@ -294,7 +294,9 @@ async function main() {
   const toolMeta = getToolMetaByName(toolsMeta, toolName);
 
   const argsObj = optionsToArgs(options, toolMeta && toolMeta.inputSchema ? toolMeta.inputSchema : null);
-  process.stderr.write(`Args: ${JSON.stringify(argsObj)}\n`);
+  if (String(process.env.INTELLIZENCE_DEBUG || '').trim()) {
+    process.stderr.write(`Args: ${JSON.stringify(argsObj)}\n`);
+  }
 
   const validation = validateArgsAgainstSchema(argsObj, toolMeta && toolMeta.inputSchema ? toolMeta.inputSchema : null);
   if (!validation.ok) {
