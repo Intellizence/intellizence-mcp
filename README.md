@@ -36,34 +36,40 @@ INTELLIZENCE_API_KEY=... intellizence-mcp
 PowerShell:
 
 ```powershell
-$env:INTELLIZENCE_API_KEY="..."; npx -y intellizence-mcp
+$env:INTELLIZENCE_API_KEY="..."; intellizence-mcp
 ```
 
 CMD:
 
 ```cmd
-set INTELLIZENCE_API_KEY=... && npx -y intellizence-mcp
+set INTELLIZENCE_API_KEY=... && intellizence-mcp
 ```
 
 ## Run (CLI)
 
-This package also ships a simple JSON-based CLI wrapper around the same dataset tools.
+This package also ships a simple CLI wrapper around the same dataset tools.
 
 ```bash
-INTELLIZENCE_API_KEY=... npx -y intellizence-mcp intellizence-mcp-cli tools
-INTELLIZENCE_API_KEY=... npx -y intellizence-mcp intellizence-mcp-cli call search_news --args '{"companies":["openai.com"],"limit":5}'
+INTELLIZENCE_API_KEY=... intellizence tools
+INTELLIZENCE_API_KEY=... intellizence search_news --companies openai.com --limit 5
 ```
 
 PowerShell:
 
 ```powershell
-$env:INTELLIZENCE_API_KEY="..."; npx -y intellizence-mcp intellizence-mcp-cli tools
+$env:INTELLIZENCE_API_KEY="..."; intellizence tools
 ```
 
 CMD:
 
 ```cmd
-set INTELLIZENCE_API_KEY=... && npx -y intellizence-mcp intellizence-mcp-cli tools
+set INTELLIZENCE_API_KEY=... && intellizence tools
+```
+
+Without global install:
+
+```bash
+INTELLIZENCE_API_KEY=... npx -y --package intellizence-mcp intellizence tools
 ```
 
 ## Claude Desktop configuration

@@ -1,6 +1,6 @@
 {
   "name": "intellizence-mcp",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Intellizence MCP server (stdio) for accessing Intellizence datasets from MCP clients.",
   "private": false,
   "type": "module",
@@ -22,7 +22,7 @@
   ],
   "bin": {
     "intellizence-mcp": "./src/mcp-stdio.js",
-    "intellizence-mcp-cli": "./src/cli.js"
+    "intellizence": "./src/cli.js"
   },
   "engines": {
     "node": ">=18"
