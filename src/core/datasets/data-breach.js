@@ -1,4 +1,4 @@
-import { postJson } from '../api.js';
+import { getJson, postJson } from '../api.js';
 import { COMPANY_INDUSTRY_ENUM, COMPANY_TYPE_ENUM, DATE_SCHEMA } from './constants.js';
 
 function registerDataBreach(server) {
@@ -132,8 +132,60 @@ function registerDataBreach(server) {
       delete payload.peopleImpactedMin;
       delete payload.peopleImpactedMax;
 
-      const result = await postJson('/api/dataset/data-breach', payload);
+      const result = await postJson('/api/mcp/dataset/data-breach', payload);
       return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+    }
+  );
+
+  server.registerTool(
+    'get_data_breach_by_id',
+    {
+      description: [
+        'Fetch a single data breach record by id (use when the user asks for more details about a specific security incident returned by search_security_breaches_data).',
+        'Input: id (data breach id).',
+      ].join('\n'),
+      inputSchema: {
+        type: 'object',
+        properties: {
+          id: { type: 'string' },
+        },
+        required: ['id'],
+      },
+    },
+    async (args) => {
+      try {
+        const id = args && typeof args.id === 'string' ? args.id.trim() : '';
+        if (!id) {
+          const payload = {
+            ok: false,
+            error: { type: 'invalid_params', message: 'id is required' },
+          };
+          return {
+            ...payload,
+            content: [{ type: 'text', text: JSON.stringify(payload) }],
+          };
+        }
+
+        const result = await getJson(`/api/mcp/dataset/data-breach/${encodeURIComponent(id)}`);
+        const payload = result && typeof result === 'object' ? result : { ok: true, result };
+        return {
+          ...payload,
+          content: [{ type: 'text', text: JSON.stringify(payload) }],
+        };
+      } catch (err) {
+        const msg = err && typeof err.message === 'string' ? err.message : String(err);
+        const payload = {
+          ok: false,
+          error: {
+            type: 'exception',
+            message: msg,
+          },
+        };
+        return {
+          ...payload,
+          content: [{ type: 'text', text: JSON.stringify(payload) }],
+        };
+      }
     }
   );
 }

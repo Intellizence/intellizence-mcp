@@ -1,4 +1,4 @@
-import { postJson } from '../api.js';
+import { getJson, postJson } from '../api.js';
 import { COMPANY_INDUSTRY_ENUM, COMPANY_TYPE_ENUM, CURRENCY_ENUM, DATE_SCHEMA } from './constants.js';
 
 function registerMna(server) {
@@ -105,8 +105,8 @@ function registerMna(server) {
         '',
         'Currency:',
         '- You can pass one or more currencies via the currency filter (e.g. ["USD", "EUR", "GBP"]).',
-        '- If currency is omitted, it defaults to all supported currencies.',
-        '- If filtering by dealAmount, include currency to interpret the threshold consistently.',
+        '- If filtering by dealAmount and currency is omitted, it defaults to all supported currencies.',
+        '- If filtering by dealAmount, currency is optional but recommended when the user clearly specifies a currency in the question.',
         '- Do not convert non-USD amounts to USD unless the user explicitly asks and you have a reliable FX source; otherwise present amounts in the reported currency and label the currency clearly.',
         '',
         'LIMIT GUIDANCE - match depth of response to user intent:',
@@ -169,11 +169,8 @@ function registerMna(server) {
     async (args) => {
       const payload = { ...(args ?? {}) };
 
-      if (typeof payload.currency === 'string' && payload.currency) {
-        payload.currency = [payload.currency];
-      }
-      if (!Array.isArray(payload.currency) || payload.currency.length === 0) {
-        payload.currency = [...CURRENCY_ENUM];
+      if (typeof payload.dealAmount === 'string' && !payload.dealAmount.trim()) {
+        delete payload.dealAmount;
       }
 
       if (!payload.dealAmount && payload.dealAmountOp) {
@@ -186,13 +183,80 @@ function registerMna(server) {
         }
       }
 
+      if (payload.dealAmount) {
+        if (typeof payload.currency === 'string' && payload.currency) {
+          payload.currency = [payload.currency];
+        }
+        if (!Array.isArray(payload.currency) || payload.currency.length === 0) {
+          payload.currency = [...CURRENCY_ENUM];
+        }
+      } else {
+        delete payload.currency;
+      }
+
       delete payload.dealAmountOp;
       delete payload.dealAmountValue;
       delete payload.dealAmountMin;
       delete payload.dealAmountMax;
 
-      const result = await postJson('/api/dataset/mna', payload);
+      //if (String(process.env.INTELLIZENCE_DEBUG || '').trim()) {
+        console.error('MNA payload:', JSON.stringify(payload));
+      //}
+
+      const result = await postJson('/api/mcp/dataset/mna', payload);
       return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+    }
+  );
+
+  server.registerTool(
+    'get_merger_acquisition_by_id',
+    {
+      description: [
+        'Fetch a single M&A record by id (use when the user asks for more details about a specific deal returned by search_mergers_acquisitions_data).',
+        'Input: id (mna id).',
+      ].join('\n'),
+      inputSchema: {
+        type: 'object',
+        properties: {
+          id: { type: 'string' },
+        },
+        required: ['id'],
+      },
+    },
+    async (args) => {
+      try {
+        const id = args && typeof args.id === 'string' ? args.id.trim() : '';
+        if (!id) {
+          const payload = {
+            ok: false,
+            error: { type: 'invalid_params', message: 'id is required' },
+          };
+          return {
+            ...payload,
+            content: [{ type: 'text', text: JSON.stringify(payload) }],
+          };
+        }
+
+        const result = await getJson(`/api/mcp/dataset/mna/${encodeURIComponent(id)}`);
+        const payload = result && typeof result === 'object' ? result : { ok: true, result };
+        return {
+          ...payload,
+          content: [{ type: 'text', text: JSON.stringify(payload) }],
+        };
+      } catch (err) {
+        const msg = err && typeof err.message === 'string' ? err.message : String(err);
+        const payload = {
+          ok: false,
+          error: {
+            type: 'exception',
+            message: msg,
+          },
+        };
+        return {
+          ...payload,
+          content: [{ type: 'text', text: JSON.stringify(payload) }],
+        };
+      }
     }
   );
 }

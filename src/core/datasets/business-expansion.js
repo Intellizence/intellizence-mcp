@@ -1,4 +1,4 @@
-import { postJson } from '../api.js';
+import { getJson, postJson } from '../api.js';
 import { COMPANY_INDUSTRY_ENUM, COMPANY_TYPE_ENUM, CURRENCY_ENUM, DATE_SCHEMA } from './constants.js';
 
 function registerBusinessExpansion(server) {
@@ -199,8 +199,60 @@ function registerBusinessExpansion(server) {
       delete payload.jobsMin;
       delete payload.jobsMax;
 
-      const result = await postJson('/api/dataset/business-expansion', payload);
+      const result = await postJson('/api/mcp/dataset/business-expansion', payload);
       return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+    }
+  );
+
+  server.registerTool(
+    'get_business_expansion_by_id',
+    {
+      description: [
+        'Fetch a single business expansion record by id (use when the user asks for more details about a specific business expansion event returned by search_expansion_data).',
+        'Input: id (business expansion id).',
+      ].join('\n'),
+      inputSchema: {
+        type: 'object',
+        properties: {
+          id: { type: 'string' },
+        },
+        required: ['id'],
+      },
+    },
+    async (args) => {
+      try {
+        const id = args && typeof args.id === 'string' ? args.id.trim() : '';
+        if (!id) {
+          const payload = {
+            ok: false,
+            error: { type: 'invalid_params', message: 'id is required' },
+          };
+          return {
+            ...payload,
+            content: [{ type: 'text', text: JSON.stringify(payload) }],
+          };
+        }
+
+        const result = await getJson(`/api/mcp/dataset/business-expansion/${encodeURIComponent(id)}`);
+        const payload = result && typeof result === 'object' ? result : { ok: true, result };
+        return {
+          ...payload,
+          content: [{ type: 'text', text: JSON.stringify(payload) }],
+        };
+      } catch (err) {
+        const msg = err && typeof err.message === 'string' ? err.message : String(err);
+        const payload = {
+          ok: false,
+          error: {
+            type: 'exception',
+            message: msg,
+          },
+        };
+        return {
+          ...payload,
+          content: [{ type: 'text', text: JSON.stringify(payload) }],
+        };
+      }
     }
   );
 }

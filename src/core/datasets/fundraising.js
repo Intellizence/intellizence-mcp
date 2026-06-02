@@ -1,4 +1,4 @@
-import { postJson } from '../api.js';
+import { getJson, postJson } from '../api.js';
 import { COMPANY_INDUSTRY_ENUM, COMPANY_TYPE_ENUM, CURRENCY_ENUM, DATE_SCHEMA } from './constants.js';
 
 function registerFundraising(server) {
@@ -98,8 +98,8 @@ function registerFundraising(server) {
         '- Use raw numbers (e.g. 1000000), not "1M".',
         '- Currency behavior:',
         '  - currency supports one or more currencies (e.g. ["USD", "EUR", "GBP"]).',
-        '  - If currency is omitted, it defaults to all supported currencies.',
-        '  - If filtering by dealAmount, include currency to interpret the threshold consistently.',
+        '  - Currency is only applied when filtering by dealAmount.',
+        '  - If filtering by dealAmount and currency is omitted, it defaults to all supported currencies.',
         '  - Do not convert non-USD amounts to USD unless the user explicitly asks and you have a reliable FX source; otherwise present amounts in the reported currency and label the currency clearly.',
         '',
         'LIMIT GUIDANCE - match depth of response to user intent:',
@@ -143,13 +143,6 @@ function registerFundraising(server) {
     async (args) => {
       const payload = { ...(args ?? {}) };
 
-      if (typeof payload.currency === 'string' && payload.currency) {
-        payload.currency = [payload.currency];
-      }
-      if (!Array.isArray(payload.currency) || payload.currency.length === 0) {
-        payload.currency = [...CURRENCY_ENUM];
-      }
-
       if (!payload.dealAmount && payload.dealAmountOp) {
         if (payload.dealAmountOp === 'between') {
           if (typeof payload.dealAmountMin === 'number' && typeof payload.dealAmountMax === 'number') {
@@ -160,13 +153,76 @@ function registerFundraising(server) {
         }
       }
 
+      if (payload.dealAmount) {
+        if (typeof payload.currency === 'string' && payload.currency) {
+          payload.currency = [payload.currency];
+        }
+        if (!Array.isArray(payload.currency) || payload.currency.length === 0) {
+          payload.currency = [...CURRENCY_ENUM];
+        }
+      } else {
+        delete payload.currency;
+      }
+
       delete payload.dealAmountOp;
       delete payload.dealAmountValue;
       delete payload.dealAmountMin;
       delete payload.dealAmountMax;
 
-      const result = await postJson('/api/dataset/fundraising', payload);
+      const result = await postJson('/api/mcp/dataset/fundraising', payload);
       return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+    }
+  );
+
+  server.registerTool(
+    'get_fundraising_by_id',
+    {
+      description: [
+        'Fetch a single fundraising record by id (use when the user asks for more details about a specific funding event returned by search_funding_data).',
+        'Input: id (fundraising id).',
+      ].join('\n'),
+      inputSchema: {
+        type: 'object',
+        properties: {
+          id: { type: 'string' },
+        },
+        required: ['id'],
+      },
+    },
+    async (args) => {
+      try {
+        const id = args && typeof args.id === 'string' ? args.id.trim() : '';
+        if (!id) {
+          const payload = {
+            ok: false,
+            error: { type: 'invalid_params', message: 'id is required' },
+          };
+          return {
+            ...payload,
+            content: [{ type: 'text', text: JSON.stringify(payload) }],
+          };
+        }
+
+        const result = await getJson(`/api/mcp/dataset/fundraising/${encodeURIComponent(id)}`);
+        const payload = result && typeof result === 'object' ? result : { ok: true, result };
+        return {
+          ...payload,
+          content: [{ type: 'text', text: JSON.stringify(payload) }],
+        };
+      } catch (err) {
+        const msg = err && typeof err.message === 'string' ? err.message : String(err);
+        const payload = {
+          ok: false,
+          error: {
+            type: 'exception',
+            message: msg,
+          },
+        };
+        return {
+          ...payload,
+          content: [{ type: 'text', text: JSON.stringify(payload) }],
+        };
+      }
     }
   );
 }
